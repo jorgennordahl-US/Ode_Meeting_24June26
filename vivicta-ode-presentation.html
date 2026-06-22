@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vivicta — Ode AS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a3622;
+    --accent: #3ecf8e;
+    --text: #ffffff;
+    --text-muted: rgba(255,255,255,0.55);
+    --text-secondary: rgba(255,255,255,0.8);
+    --surface: rgba(255,255,255,0.05);
+    --border: rgba(62,207,142,0.2);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow: hidden;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5vw 7vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .slide-eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+
+  .slide-title {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-weight: 300;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 2.5rem;
+    max-width: 820px;
+  }
+
+  .slide-title strong {
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .points {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 680px;
+  }
+
+  .point {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .point-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 0.55rem;
+    flex-shrink: 0;
+  }
+
+  .point-text {
+    font-size: clamp(0.95rem, 1.6vw, 1.125rem);
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.65;
+  }
+
+  .point-text strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    max-width: 900px;
+  }
+
+  .col-block {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .col-block-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    letter-spacing: 0.04em;
+  }
+
+  .col-block .points {
+    gap: 0.75rem;
+  }
+
+  .col-block .point-text {
+    font-size: 0.9rem;
+  }
+
+  .quote-block {
+    border-left: 2px solid var(--accent);
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+    max-width: 680px;
+  }
+
+  .quote-block p {
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    font-weight: 300;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    max-width: 900px;
+    margin-top: 0.5rem;
+  }
+
+  .stat-block {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .stat-number {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .progress-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: var(--accent);
+    transition: width 0.35s ease;
+    z-index: 100;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 2rem;
+    right: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 100;
+  }
+
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 0.5px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+    font-size: 16px;
+  }
+
+  .nav-btn:hover {
+    background: rgba(62,207,142,0.15);
+    border-color: var(--accent);
+  }
+
+  .nav-counter {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    min-width: 48px;
+    text-align: center;
+  }
+
+  .slide-number {
+    position: fixed;
+    bottom: 2.2rem;
+    left: 2.5rem;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    z-index: 100;
+  }
+
+  .logo-mark {
+    position: fixed;
+    top: 2rem;
+    right: 2.5rem;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    z-index: 100;
+  }
+
+  .title-slide .slide-title {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    margin-bottom: 1.5rem;
+  }
+
+  .title-slide .subtitle {
+    font-size: clamp(1rem, 1.8vw, 1.375rem);
+    font-weight: 300;
+    color: var(--text-muted);
+    max-width: 560px;
+    line-height: 1.6;
+  }
+
+  .title-slide .meta {
+    margin-top: 3rem;
+    display: flex;
+    gap: 2rem;
+  }
+
+  .meta-item {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .accent-line {
+    width: 48px;
+    height: 2px;
+    background: var(--accent);
+    margin-bottom: 2rem;
+  }
+
+  .discussion-slide .slide-title {
+    font-size: clamp(2rem, 5vw, 4rem);
+  }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    max-width: 680px;
+  }
+
+  .tag {
+    border: 0.5px solid var(--border);
+    border-radius: 100px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .track-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    max-width: 780px;
+    margin-top: 0.5rem;
+  }
+
+  .track-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .track-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  .track-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+  }
+
+  .track-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .principle-box {
+    margin-top: 1.5rem;
+    border: 0.5px solid var(--accent);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    max-width: 680px;
+    background: rgba(62,207,142,0.05);
+  }
+
+  .principle-box p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .principle-box strong {
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div class="logo-mark">VIVICTA</div>
+<div class="progress-bar" id="progress"></div>
+<div class="slide-number" id="slideNum"></div>
+
+<div class="deck" id="deck">
+
+  <!-- TITLE SLIDE -->
+  <div class="slide title-slide active">
+    <div class="accent-line"></div>
+    <div class="slide-eyebrow">Ode AS — ERP Partnership Presentation</div>
+    <h1 class="slide-title">A partner who shares<br><strong>the ambition.</strong></h1>
+    <p class="subtitle">How Vivicta would help Ode become the most innovative, AI-first company in Norwegian cod aquaculture.</p>
+    <div class="meta">
+      <div class="meta-item">90 min presentation</div>
+      <div class="meta-item">50 min discussion</div>
+      <div class="meta-item">Vivicta AS, 2026</div>
+    </div>
+  </div>
+
+  <!-- AGENDA -->
+  <div class="slide">
+    <div class="slide-eyebrow">Agenda</div>
+    <h2 class="slide-title">Today's programme</h2>
+    <div class="two-col">
+      <div class="col-block">
+        <div class="col-block-title">Presentation, 90 min</div>
+        <div class="points">
+          <div class="point"><div class="point-dot"></div><div class="point-text">1. Who is Vivicta</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">2. Future picture</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">3. Our definition of ERP</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">4. What AI-first actually requires</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">5. Vivicta's approach to Ode</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">6. The team</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">7. Cost model and partnership</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">8. Summary</div></div>
+        </div>
+      </div>
+      <div class="col-block">
+        <div class="col-block-title">Discussion, 50 min</div>
+        <div class="points">
+          <div class="point"><div class="point-dot"></div><div class="point-text">Open Q&amp;A</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">Gain share mechanics</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">Adoption as leadership responsibility</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. WHO IS VIVICTA -->
+  <div class="slide">
+    <div class="slide-eyebrow">1 — Who is Vivicta</div>
+    <h2 class="slide-title">Built without what usually stands between <strong>experience and the client.</strong></h2>
+    <div class="points">
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>New company, deliberate construction.</strong> No organisational overhead competing with the client's interest. Experienced people work directly on the engagement.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>D365 team nationally and internationally.</strong> Core team in Oslo and Trondheim. Capacity and specialist expertise from the Baltics and India, layered deliberately and reflected in the cost model.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>More than an ERP house.</strong> Competence in data architecture, integrations, Power Platform, AI and analytics — relevant because Ode's ambition stretches beyond what a pure ERP delivery can address.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Vivicta's ambition.</strong> To be the natural partner for companies that set goals slightly too large to be comfortable, and who need someone willing to take co-ownership of the outcome.</div></div>
+    </div>
+  </div>
+
+  <!-- 2. FUTURE PICTURE -->
+  <div class="slide">
+    <div class="slide-eyebrow">2 — Future picture</div>
+    <h2 class="slide-title">Ode in <strong>three years.</strong></h2>
+    <div class="points">
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Decisions based on models, not intuition alone.</strong> A production manager takes a feed strategy decision on a generation and utsett. The model has followed that generation from egg. Biological data from Mercatus, cost picture from D365, probable market price at slaughter time. The decision takes minutes, not days. The audit trail is complete.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Finance runs on real-time data.</strong> IAS 41 compatible biomass estimates produced continuously from live pen data. The auditor gets a data foundation, not a number.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>The system knows before the person does.</strong> Deviations from plan surface immediately, routed to the right person with the right context.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>The integrated team meets to find the next improvement,</strong> not to discuss system status. Ode owns the backlog. Vivicta pushes back. That dynamic continues across the full lifecycle.</div></div>
+    </div>
+  </div>
+
+  <!-- 3. DEFINITION OF ERP -->
+  <div class="slide">
+    <div class="slide-eyebrow">3 — Our definition of ERP</div>
+    <h2 class="slide-title">F&amp;O is the digital core.<br><strong>ERP is the sum of three things.</strong></h2>
+    <div class="three-col">
+      <div class="stat-block">
+        <div class="stat-number">01</div>
+        <div class="col-block-title" style="margin-top:0.75rem;">Technology</div>
+        <div class="stat-label">D365 F&amp;O as the digital core. Transactions, data production, integrations. The foundation must be solid.</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number">02</div>
+        <div class="col-block-title" style="margin-top:0.75rem;">Process design</div>
+        <div class="stat-label">How Ode organises its workflows. Who owns which decisions. Designed before configuration, not after.</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number">03</div>
+        <div class="col-block-title" style="margin-top:0.75rem;">Human interaction</div>
+        <div class="stat-label">How people actually behave in relation to the system. This is where value is either realised or lost.</div>
+      </div>
+    </div>
+    <div class="quote-block" style="margin-top:2rem;">
+      <p>Adoption is not a training problem. It is a governance problem. If business leaders do not own the value case for their own areas, no amount of training will close the gap.</p>
+    </div>
+  </div>
+
+  <!-- 4. AI-FIRST -->
+  <div class="slide">
+    <div class="slide-eyebrow">4 — What AI-first actually requires</div>
+    <h2 class="slide-title">Infrastructure <em>and</em> <strong>working method.</strong></h2>
+    <div class="two-col">
+      <div class="col-block">
+        <div class="col-block-title">Technical foundation</div>
+        <div class="points">
+          <div class="point"><div class="point-dot"></div><div class="point-text">Data quality as a design principle from day one, not a remediation exercise.</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">Generation and utsett continuity from egg to slaughter. Mercatus integration without information loss.</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">AI initiatives fail on data foundations, not algorithms. That is the failure we are here to prevent.</div></div>
+        </div>
+      </div>
+      <div class="col-block">
+        <div class="col-block-title">Working method across the full lifecycle</div>
+        <div class="points">
+          <div class="point"><div class="point-dot"></div><div class="point-text">Ode and Vivicta as one integrated team. Ode's subject matter experts in process design from the start, not as approvers at the end.</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">AI tools used actively in the delivery itself, building habits and competence while work is in progress.</div></div>
+          <div class="point"><div class="point-dot"></div><div class="point-text">An AI-first organisation builds through Lean improvement cycles after MVP. The capability grows over time, it does not arrive at go-live.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. APPROACH -->
+  <div class="slide">
+    <div class="slide-eyebrow">5 — Vivicta's approach to Ode</div>
+    <h2 class="slide-title">We steer toward <strong>Desired Outcomes,</strong> not milestones.</h2>
+    <div class="points">
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Outcomes as governance mechanism.</strong> Milestones measure activity. Desired Outcomes measure value. That distinction shapes how every decision is made throughout the engagement.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Process design before configuration.</strong> We do not open the system before we understand how Ode works and how Ode wants to work. Domain immersion is the prerequisite for accountability on outcomes.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>MVP is the starting point.</strong> A working system covering core needs from day one, improved continuously through Lean cycles where Ode owns the backlog. The investment delivers value immediately and the system grows with the organisation.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Go-live is not the finish line.</strong> It is the beginning of the phase where the system proves its value.</div></div>
+    </div>
+  </div>
+
+  <!-- 6. TEAM -->
+  <div class="slide">
+    <div class="slide-eyebrow">6 — The team</div>
+    <h2 class="slide-title">Named people with <strong>actual delivery history.</strong></h2>
+    <div class="points">
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Elise Karita Halvorsrød, Executive Sponsor.</strong> Head of Dynamics Norway. Accountable for the partnership at senior level and present throughout the lifecycle, not only at signature.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Delivery lead and core team.</strong> Named individuals with relevant delivery history in D365 F&amp;O, havbruk and food production. CV documentation available on request.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Governance connected to people.</strong> Four forums: Joint Governance Board, Outcomes and Value Board, Delivery and Run Forum, Exit and Continuity Review. Each forum has a named Vivicta owner and defined escalation rules with time triggers.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>International capacity, layered deliberately.</strong> Norwegian core team on-site and accountable. Baltic and Indian capacity on volume and specialisation. Cost model reflects this structure directly.</div></div>
+    </div>
+  </div>
+
+  <!-- 7. COST MODEL -->
+  <div class="slide">
+    <div class="slide-eyebrow">7 — Cost model and partnership</div>
+    <h2 class="slide-title">Principle over rates.<br><strong>Shared risk and upside.</strong></h2>
+    <div class="track-grid">
+      <div class="track-card">
+        <div class="track-label">Track 1</div>
+        <div class="track-title">Cost plus margin, open book</div>
+        <div class="track-desc">You see what we pay, what margin we take, and why. No hidden markups. No surprises on the next invoice.</div>
+      </div>
+      <div class="track-card">
+        <div class="track-label">Track 2</div>
+        <div class="track-title">Outcome bonus in tranches</div>
+        <div class="track-desc">Tied directly to Ode's Desired Outcomes. First tranche at documented baseline achievement. Second and third require delivery beyond that.</div>
+      </div>
+    </div>
+    <div class="principle-box">
+      <p>The outcome pot in Track 2 must always exceed what we would earn on standard time and materials alone. That is the anchor of the Vested model. If it does not hold, <strong>it is not a real Vested partnership.</strong></p>
+    </div>
+  </div>
+
+  <!-- 8. SUMMARY -->
+  <div class="slide">
+    <div class="slide-eyebrow">8 — Summary</div>
+    <h2 class="slide-title">Three reasons why <strong>Vivicta.</strong></h2>
+    <div class="points">
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>Built without the overhead.</strong> Experienced people work directly on the engagement. No organisational layers competing with Ode's interest.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>We define ERP as technology, process and people.</strong> We deliver all three. Not F&amp;O and a training plan.</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text"><strong>We take co-ownership of the ambition.</strong> A Vested model where we have something to lose if we do not deliver, and something to gain when we do. That is the only way we are willing to work with a client like Ode.</div></div>
+    </div>
+  </div>
+
+  <!-- DISCUSSION -->
+  <div class="slide discussion-slide">
+    <div class="slide-eyebrow">Discussion — 50 minutes</div>
+    <h2 class="slide-title">Over to <strong>you.</strong></h2>
+    <div class="points" style="margin-bottom:1.5rem;">
+      <div class="point"><div class="point-dot"></div><div class="point-text">Open Q&amp;A</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text">Prepared to go deep on gain share mechanics and how tranches are documented</div></div>
+      <div class="point"><div class="point-dot"></div><div class="point-text">Prepared to go deep on adoption as a leadership responsibility, not a training task</div></div>
+    </div>
+    <div class="tag-row">
+      <div class="tag">AI-first working method</div>
+      <div class="tag">Vested model</div>
+      <div class="tag">Governance forums</div>
+      <div class="tag">International team structure</div>
+      <div class="tag">Mercatus integration</div>
+      <div class="tag">MVP and Lean cycles</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="move(-1)" aria-label="Previous slide">&#8592;</button>
+  <span class="nav-counter" id="counter"></span>
+  <button class="nav-btn" id="nextBtn" onclick="move(1)" aria-label="Next slide">&#8594;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = (n + total) % total;
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + total;
+    document.getElementById('slideNum').textContent = current === 0 ? '' : 'Vivicta — Ode AS 2026';
+    document.getElementById('progress').style.width = ((current + 1) / total * 100) + '%';
+  }
+
+  function move(dir) { show(current + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); move(1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+  });
+
+  document.querySelector('.deck').addEventListener('click', e => {
+    if (!e.target.closest('.nav-btn')) move(1);
+  });
+
+  show(0);
+</script>
+</body>
+</html>
